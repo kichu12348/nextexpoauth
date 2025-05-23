@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "878222896773",
+    "project_id": "nextexpoauth-30163",
+    "storage_bucket": "nextexpoauth-30163.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878222896773:android:79038e8a0df71aa07443ec",
+        "android_client_info": {
+          "package_name": "com.kichu12348.nextexpoauth"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878222896773-ejmhid2hr5vgnuf53ekjpceefubgve91.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_1RiTKsOYSx-TeGgC-nQC29kKBs0kc7E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878222896773-ejmhid2hr5vgnuf53ekjpceefubgve91.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
