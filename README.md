@@ -25,48 +25,144 @@ The core requirements for this project were:
 
 ## Project Structure
 
-*   **`./` (Root Directory):** Contains the Expo Android application.
-*   **`./lib/firebase.js`:** Contains Firebase Cloud Messaging (FCM) helper functions for requesting user permission and retrieving the FCM token.
-*   **`./App.js`:** The main entry point for the Expo application, including WebView setup and FCM initialization.
-*   **`./android/`:** Android native project files.
-*   **`google-services.json`:** Firebase configuration file for the Android app.
+*   **`./lib/firebase.js`:** FCM helper functions
+*   **`./App.js`:** Main app with WebView and FCM
+*   **`./android/`:** Android native files
+*   **`google-services.json`:** Firebase config
 
-## Key Features Implemented
+## Key Code Snippets
 
-*   **Google Sign-Up:** Handled by the Next.js web application, accessible via the WebView.
-*   **WebView Integration:** The Next.js application is loaded into the Expo app.
-*   **Native FCM Push Notifications:**
-    *   Permission request for notifications.
-    *   Retrieval of FCM token.
-    *   Handling of incoming foreground messages (displaying an alert).
+### FCM Setup (`lib/firebase.js`)
 
-## Setup and Running the Expo App
+```javascript
+import messaging from "@react-native-firebase/messaging";
 
-1.  **Clone the repository (this Expo project).**
-2.  **Install dependencies:**
-    ```bash
-    yarn install
-    # or
-    npm install
-    ```
-3.  **Ensure `google-services.json` is correctly placed in the root and `android/app/` directory.** (It seems to be in the root in your provided file structure, ensure it's also copied or linked to `android/app/google-services.json` if not already handled by a build step).
-4.  **Run the Expo app:**
-    *   To start the development server:
-        ```bash
-        yarn start
-        # or
-        npm start
-        ```
-    *   To run on an Android emulator/device (after starting the dev server):
-        ```bash
-        yarn android
-        # or
-        npm run android
-        # or press 'a' in the terminal where Expo CLI is running.
-        ```
+async function requestUserPermission() {
+  const authStatus = await messaging().requestPermission();
+  return authStatus === messaging.AuthorizationStatus.AUTHORIZED;
+}
+
+async function getFCMToken() {
+  return await messaging().getToken();
+}
+```
+
+### Main App with WebView (`App.js`)
+
+```javascript
+import { Alert } from "react-native";
+import { WebView } from "react-native-webview";
+import { getFCMToken, requestUserPermission } from "./lib/firebase";
+import messaging from "@react-native-firebase/messaging";
+
+export default function App() {
+  useEffect(() => {
+    // Initialize FCM
+    requestUserPermission().then(getFCMToken).then((token) => {
+      console.log("FCM Token:", token);
+    });
+
+    // Handle foreground notifications
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      Alert.alert(
+        remoteMessage.notification.title,
+        remoteMessage.notification.body
+      );
+    });
+
+    return unsubscribe;
+  }, []);
+
+  return (
+    <WebView 
+      source={{ uri: "https://nextauthassesment.vercel.app" }}
+      // ...other props
+    />
+  );
+}
+```
+
+### Android Config
+
+```gradle
+// android/build.gradle
+dependencies {
+  classpath 'com.google.gms:google-services:4.4.1'
+}
+
+// android/app/build.gradle
+apply plugin: "com.google.gms.google-services"
+```
+
+```json
+// app.json
+{
+  "expo": {
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "package": "com.kichu12348.nextexpoauth"
+    },
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
+    ]
+  }
+}
+```
+
+### WebView Communication
+
+```javascript
+// Send from WebView to React Native
+window.ReactNativeWebView.postMessage(JSON.stringify({
+  type: "fcm_token_request"
+}));
+
+// Handle in React Native
+<WebView
+  onMessage={(event) => {
+    const data = JSON.parse(event.nativeEvent.data);
+    if (data.type === "fcm_token_request") {
+      getFCMToken().then(token => {
+        webViewRef.current?.postMessage(JSON.stringify({ token }));
+      });
+    }
+  }}
+/>
+```
+
+## Setup
+
+```bash
+# Install dependencies
+yarn install
+
+# Start development
+yarn start
+
+# Run on Android
+yarn android
+```
+
+## Test FCM
+
+```bash
+curl -X POST https://fcm.googleapis.com/fcm/send \
+  -H "Authorization: key=YOUR_SERVER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": "FCM_TOKEN_HERE",
+    "notification": {
+      "title": "Test",
+      "body": "Test message"
+    }
+  }'
+```
 
 ## Notes
 
-*   The Next.js application (authentication, UI) is maintained in the [nextauthassesment](https://github.com/kichu12348/nextauthassesment) repository.
-*   This Expo application focuses on wrapping the web app and integrating native FCM.
-*   Communication between WebView and the React Native app (e.g., for passing tokens or handling specific events) can be implemented using `postMessage` and `onMessage` props of the WebView component.
+*   Next.js frontend: [nextauthassesment](https://github.com/kichu12348/nextauthassesment)
+*   Uses native FCM, not Expo notifications
+*   WebView loads the deployed Next.js app
+*   Foreground notifications show as alerts
+*   Background notifications handled automatically
